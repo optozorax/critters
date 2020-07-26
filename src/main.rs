@@ -59,8 +59,8 @@ async fn main() {
         }
 
         let (mouse_x, mouse_y) = mouse_position();
-        let mouse_x = mouse_x as usize;
-        let mouse_y = mouse_y as usize;
+        let mouse_x = world::normalize(mouse_x as usize, w);
+        let mouse_y = world::normalize(mouse_y as usize, h);
 
         if is_mouse_button_down(MouseButton::Left) {
             for x in 0..size as usize {
@@ -157,6 +157,27 @@ async fn main() {
             "Works only for |step| < 100",
             w as f32 + 10.0,
             70.0,
+            20.,
+            BLACK,
+        );
+        draw_text(
+            "Left, Right - change step",
+            w as f32 + 10.0,
+            110.0,
+            20.,
+            BLACK,
+        );
+        draw_text(
+            "Up, Down - change draw size",
+            w as f32 + 10.0,
+            130.0,
+            20.,
+            BLACK,
+        );
+        draw_text(
+            "B - enable showing zero step",
+            w as f32 + 10.0,
+            150.0,
             20.,
             BLACK,
         );

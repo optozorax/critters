@@ -6,7 +6,7 @@ pub struct World {
 	step_offset: bool,
 }
 
-fn normalize(var: usize, size: usize) -> usize {
+pub fn normalize(var: usize, size: usize) -> usize {
 	if var >= size { var % size } else { var }
 }
 
