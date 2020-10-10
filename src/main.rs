@@ -62,17 +62,24 @@ async fn main() {
         let mouse_x = world::normalize(mouse_x as usize, w);
         let mouse_y = world::normalize(mouse_y as usize, h);
 
+        if is_mouse_button_down(MouseButton::Middle) {
+            for x in 0..size as usize {
+                for y in 0..size as usize {
+                    world.set(mouse_x + x, mouse_y + y, 0);
+                }
+            }
+        }
         if is_mouse_button_down(MouseButton::Left) {
             for x in 0..size as usize {
                 for y in 0..size as usize {
-                    world.set(mouse_x + x, mouse_y + y, true);
+                    world.set(mouse_x + x, mouse_y + y, 1);
                 }
             }
         }
         if is_mouse_button_down(MouseButton::Right) {
             for x in 0..size as usize {
                 for y in 0..size as usize {
-                    world.set(mouse_x + x, mouse_y + y, false);
+                    world.set(mouse_x + x, mouse_y + y, 2);
                 }
             }
         }
@@ -92,7 +99,12 @@ async fn main() {
             }
 
             buffer2.iter_mut().zip(to_zero.arr.iter()).for_each(|(buffer, &world)| {
-                *buffer = if world { WHITE } else { BLACK };
+                *buffer = match world {
+                    0 => BLACK,
+                    1 => BLUE,
+                    2 => RED,
+                    _ => unreachable!(),
+                };
             });
 
             for x in 0..size as usize {
@@ -117,7 +129,12 @@ async fn main() {
         }
 
         buffer.iter_mut().zip(world.arr.iter()).for_each(|(buffer, &world)| {
-            *buffer = if world { WHITE } else { BLACK };
+            *buffer = match world {
+                0 => BLACK,
+                1 => BLUE,
+                2 => RED,
+                _ => unreachable!(),
+            };
         });
 
         for x in 0..size as usize {
