@@ -3,7 +3,6 @@ pub struct World {
 	pub arr: Vec<u8>,
 	width: usize,
 	height: usize,
-	step_offset: bool,
 }
 
 pub fn normalize(var: usize, size: usize) -> usize {
@@ -35,17 +34,30 @@ const CRITTERS_STEP2: [u8; 81] = [
 ];
 
 lazy_static::lazy_static! {
-    static ref CRITTERS_STEP1_INVERT: Vec<u8> = (0..81).map(|x| CRITTERS_STEP1.iter().position(|&y| y == x).unwrap() as u8).collect();
-    static ref CRITTERS_STEP2_INVERT: Vec<u8> = (0..81).map(|x| CRITTERS_STEP2.iter().position(|&y| y == x).unwrap() as u8).collect();
+    static ref CRITTERS_STEP1_INVERT: Vec<u8> = (0..81)
+		.map(|x| {
+			CRITTERS_STEP1
+				.iter()
+				.position(|&y| y == x)
+				.unwrap() as u8
+		})
+		.collect();
+    static ref CRITTERS_STEP2_INVERT: Vec<u8> = (0..81)
+    	.map(|x| {
+    		CRITTERS_STEP2
+    			.iter()
+    			.position(|&y| y == x)
+    			.unwrap() as u8
+    	})
+    	.collect();
 }
 
 impl World {
-	pub fn new(halfwidth: usize, halfheight: usize, step_offset: bool) -> World {
+	pub fn new(halfwidth: usize, halfheight: usize) -> World {
 		World {
 			arr: vec![0; halfwidth * halfheight * 2 * 2],
 			width: halfwidth * 2,
 			height: halfheight * 2,
-			step_offset,
 		}
 	}
 
@@ -63,6 +75,14 @@ impl World {
 		self.arr[x + y * self.width] = val;
 	}
 
+	pub fn set_rect(&mut self, x: usize, y: usize, width: usize, height: usize, val: u8) {
+		for iy in 0..height {
+		    for ix in 0..width {
+		        self.set(x + ix, y + iy, val);
+		    }
+		}
+	}
+
 	fn get_block(&self, x: usize, y: usize) -> u8 {
 		((self.get(x, y) as u8) * 27) +
 		((self.get(x + 1, y) as u8) * 9) +
@@ -77,39 +97,21 @@ impl World {
 		self.set(x+1, y+1, val % 3);
 	}
 
-	pub fn step(&mut self) {
-		let offset = self.step_offset as usize;
-
+	fn for_each_block<F: Fn(u8) -> u8>(&mut self, offset: usize, f: F) {
 		for x in (0..self.width/2).map(|x| x * 2 + offset) {
 			for y in (0..self.height/2).map(|y| y * 2 + offset) {
-				let current = self.get_block(x, y);
-				let next = if !self.step_offset {
-					CRITTERS_STEP1[current as usize]
-				} else {
-					CRITTERS_STEP2[current as usize]
-				};
-				self.set_block(x, y, next);
+				self.set_block(x, y, f(self.get_block(x, y)));
 			}
 		}
+	}
 
-		self.step_offset = !self.step_offset;
+	pub fn step(&mut self) {
+		self.for_each_block(0, |current| CRITTERS_STEP1[current as usize]);
+		self.for_each_block(1, |current| CRITTERS_STEP2[current as usize]);
 	}
 
 	pub fn step_back(&mut self) {
-		let offset = !self.step_offset as usize;
-
-		for x in (0..self.width/2).map(|x| x * 2 + offset) {
-			for y in (0..self.height/2).map(|y| y * 2 + offset) {
-				let current = self.get_block(x, y);
-				let next = if !self.step_offset {
-					CRITTERS_STEP2_INVERT[current as usize]
-				} else {
-					CRITTERS_STEP1_INVERT[current as usize]
-				};
-				self.set_block(x, y, next);
-			}
-		}
-
-		self.step_offset = !self.step_offset;
+		self.for_each_block(1, |current| CRITTERS_STEP2_INVERT[current as usize]);
+		self.for_each_block(0, |current| CRITTERS_STEP1_INVERT[current as usize]);
 	}
 }

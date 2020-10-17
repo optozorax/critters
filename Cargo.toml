@@ -8,4 +8,4 @@ edition = "2018"
 
 [dependencies]
 lazy_static = "1.4.0"
-macroquad = "0.2.8"
+macroquad = { git = "https://github.com/not-fl3/macroquad", branch = "0.3", rev = "904e167" }
