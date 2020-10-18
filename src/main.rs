@@ -219,7 +219,7 @@ async fn main() {
     let w = 300;
     let h = 300;
 
-	let mut world = World::new(w/2, h/2);
+	let mut world = World::new(TheTenetOfLife::calculate().unwrap(), w/2, h/2);
 
     let mut buffer = vec![WHITE; w * h];
     let mut image = Image::gen_image_color(w as u16, h as u16, WHITE);
@@ -244,7 +244,7 @@ async fn main() {
     let mut mouse_move = false;
 
     loop {
-        clear_background(WHITE);
+        clear_background(GRAY);
 
         if i.abs() >= 100 {
             show_zero_step = false;
@@ -258,7 +258,7 @@ async fn main() {
         let (_, mouse_wheel_y) = mouse_wheel();
 
         if show_zero_step {
-            to_zero.arr.iter_mut().zip(world.arr.iter()).for_each(|(to_zero, world)| *to_zero = *world);
+            to_zero.arr_mut().iter_mut().zip(world.arr().iter()).for_each(|(to_zero, world)| *to_zero = *world);
             let mut i_to_zero = i;
             while i_to_zero != 0 {
                 if i.signum() == -1 {
@@ -269,8 +269,8 @@ async fn main() {
                 i_to_zero -= i.signum();
             }
 
-            buffer2.iter_mut().zip(to_zero.arr.iter()).for_each(|(buffer, &world)| {
-                *buffer = match world {
+            buffer2.iter_mut().zip(to_zero.arr().iter()).for_each(|(buffer, &world)| {
+                *buffer = match world as u8 {
                     0 => BLACK,
                     1 => BLUE,
                     2 => RED,
@@ -296,8 +296,8 @@ async fn main() {
             });
         }
 
-        buffer.iter_mut().zip(world.arr.iter()).for_each(|(buffer, &world)| {
-            *buffer = match world {
+        buffer.iter_mut().zip(world.arr().iter()).for_each(|(buffer, &world)| {
+            *buffer = match world as u8 {
                 0 => BLACK,
                 1 => BLUE,
                 2 => RED,
