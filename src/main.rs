@@ -216,20 +216,27 @@ impl FloatImageCamera {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let w = 300;
-    let h = 300;
+    let w = 50;
+    let h = 50;
 
-	let mut world = World::new(TheTenetOfLife::calculate().unwrap(), w/2, h/2);
+	let tenet_world = World::new(TheTenetOfLife::calculate().unwrap(), w/2, h/2);
+    // tenet_world.arr_mut().iter_mut().enumerate().for_each(|(index, i)| *i = (index as u8) % 3);
+    // let critters_world = World::new(Critters::calculate().unwrap(), w/2, h/2);
+    // let bowling_world = World::new(Bowling::calculate().unwrap(), w/2, h/2);
+
+    let mut world = tenet_world;
 
     let mut buffer = vec![WHITE; w * h];
     let mut image = Image::gen_image_color(w as u16, h as u16, WHITE);
     let texture = load_texture_from_image(&image);
-    texture.set_filter(unsafe { get_internal_gl().quad_context }, FilterMode::Nearest);
+    set_texture_filter(texture, FilterMode::Nearest);
+    // texture.set_filter(unsafe { get_internal_gl().quad_context }, FilterMode::Nearest);
 
     let mut buffer2 = vec![WHITE; w * h];
     let mut image2 = Image::gen_image_color(w as u16, h as u16, WHITE);
     let texture2 = load_texture_from_image(&image);
-    texture2.set_filter(unsafe { get_internal_gl().quad_context }, FilterMode::Nearest);
+    set_texture_filter(texture2, FilterMode::Nearest);
+    // texture2.set_filter(unsafe { get_internal_gl().quad_context }, FilterMode::Nearest);
 
     let mut size = 3usize;
     let mut i = 0i64;
@@ -238,10 +245,142 @@ async fn main() {
 
     let mut cam = FloatImageCamera {
         offset: Vec2i::new(150, 150),
-        scale: 1.5,
+        scale: 1.5 * 300.0 / w as f32,
     };
     let mut last_mouse_pos = Vec2i::new(mouse_position().0 as i32, mouse_position().1 as i32);
     let mut mouse_move = false;
+
+    let mut draw_grid = false;
+
+    let cell_size = 10;
+    let main_border = 2;
+    let secondary_border = 1;
+    let full_size = main_border + cell_size + secondary_border + cell_size;
+
+    let (new_w, new_h) = ((w/2) as u32 * full_size + main_border, (h/2) as u32 * full_size + main_border);
+    let render_target = render_target(new_w, new_h);
+    set_texture_filter(render_target.texture, FilterMode::Nearest);
+    let material = load_material(
+        VERTEX_SHADER,
+        FRAGMENT_SHADER,
+        MaterialParams {
+            uniforms: vec![
+                ("Size".to_owned(), UniformType::Float2), 
+                ("TextureSize".to_owned(), UniformType::Float2),
+                ("cell_size".to_owned(), UniformType::Int1),
+                ("main_border".to_owned(), UniformType::Int1),
+                ("secondary_border".to_owned(), UniformType::Int1),
+                ("full_size".to_owned(), UniformType::Int1),
+                ("offset".to_owned(), UniformType::Int1),
+            ],
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    const FRAGMENT_SHADER: &str = r#"#version 100
+    #extension GL_EXT_gpu_shader4 : enable
+    precision lowp float;
+
+    varying vec4 color;
+    varying vec2 uv;
+    varying vec2 intpos;
+        
+    uniform sampler2D Texture;
+    uniform vec2 TextureSize;
+
+    uniform int cell_size;
+    uniform int main_border;
+    uniform int secondary_border;
+    uniform int full_size;
+    uniform int offset;
+
+    void calcColor(int pos, vec2 dir, inout vec2 a, vec2 s, inout int change_priority) {
+        pos = pos % full_size;
+        if (offset == 1) {
+            if (pos < main_border) {
+                if (change_priority <= 2) {
+                    gl_FragColor = vec4(vec3(0.8), 1.0);
+                    change_priority = 2;
+                }
+            } else if (pos < main_border + cell_size) {
+                if (change_priority == 0) {
+                    gl_FragColor = vec4(texture2D(Texture, a / s).rgb, 1.0);
+                    change_priority = 0;
+                }
+            } else if (pos < main_border + cell_size + secondary_border) {
+                if (change_priority <= 1) {
+                    gl_FragColor = vec4(vec3(0.4), 1.0);
+                    change_priority = 1;
+                }
+            } else {
+                if (change_priority == 0) {
+                    a += 1.0 * dir;
+                    gl_FragColor = vec4(texture2D(Texture, a / s).rgb, 1.0);
+                    change_priority = 0;
+                }
+            }
+        } else {
+            if (pos < secondary_border) {
+                if (change_priority <= 1) {
+                    gl_FragColor = vec4(vec3(0.4), 1.0);
+                    change_priority = 1;
+                }
+            } else if (pos < secondary_border + cell_size) {
+                if (change_priority == 0) {
+                    gl_FragColor = vec4(texture2D(Texture, a / s).rgb, 1.0);
+                    change_priority = 0;
+                }
+            } else if (pos < secondary_border + cell_size + main_border) {
+                if (change_priority <= 2) {
+                    gl_FragColor = vec4(vec3(0.8), 1.0);
+                    change_priority = 2;
+                }
+            } else {
+                if (change_priority == 0) {
+                    a += 1.0 * dir;
+                    gl_FragColor = vec4(texture2D(Texture, a / s).rgb, 1.0);
+                    change_priority = 0;
+                }
+            }
+        }
+    }
+
+    void main() {
+        highp vec2 a = intpos;
+        highp vec2 s = TextureSize;
+        a /= float(full_size);
+        a = vec2(float(int(a.x)), float(int(a.y)));
+        a *= 2.0;
+        a += vec2(1.0, 1.0);
+
+        int change_priority = 0;
+        calcColor(int(intpos.x), vec2(1.0, 0.0), a, s, change_priority);
+        calcColor(int(intpos.y), vec2(0.0, 1.0), a, s, change_priority);
+    }
+    "#;
+
+    const VERTEX_SHADER: &str = "#version 100
+    attribute vec3 position;
+    attribute vec2 texcoord;
+    attribute vec4 color0;
+
+    varying lowp vec2 uv;
+    varying lowp vec4 color;
+    varying lowp vec2 intpos;
+
+    uniform mat4 Model;
+    uniform mat4 Projection;
+    uniform vec2 Size;
+
+    void main() {
+        gl_Position = Projection * Model * vec4(position, 1);
+        color = color0 / 255.0;
+        uv = texcoord;
+        intpos = (position.xy + vec2(1.0, 1.0)) / 2.0 * Size;
+    }
+    ";
+
 
     loop {
         clear_background(GRAY);
@@ -315,12 +454,47 @@ async fn main() {
 
         image.update(&buffer);
         update_texture(texture, &image);
-        draw_texture_ex(texture, cam.offset.x as f32, cam.offset.y as f32, WHITE, DrawTextureParams { 
-            dest_size: Some(Vec2::new(w as f32 * cam.scale, h as f32 * cam.scale)),
-            source: None,
-            rotation: 0.,
-            pivot: None,
-        });
+
+        if draw_grid {
+            set_camera(Camera2D {
+                render_target: Some(render_target),
+                ..Default::default()
+            });
+                material.set_uniform("Size", (new_w as f32, new_h as f32));
+                material.set_uniform("TextureSize", (w as f32, h as f32));
+                material.set_uniform("cell_size", (cell_size,));
+                material.set_uniform("main_border", (main_border,));
+                material.set_uniform("secondary_border", (secondary_border,));
+                material.set_uniform("full_size", (full_size,));
+                material.set_uniform("offset", (!world.is_intermediate_step() as u32,));
+                gl_use_material(material);
+                    draw_texture_ex(
+                        texture,
+                        -1.,
+                        -1.,
+                        WHITE,
+                        DrawTextureParams {
+                            dest_size: Some(vec2(2.0, 2.0)),
+                            ..Default::default()
+                        },
+                    );
+                gl_use_default_material();
+            set_default_camera();
+
+            draw_texture_ex(render_target.texture, cam.offset.x as f32, cam.offset.y as f32, WHITE, DrawTextureParams { 
+                dest_size: Some(Vec2::new(w as f32 * cam.scale, h as f32 * cam.scale)),
+                source: None,
+                rotation: 0.,
+                pivot: None,
+            });
+        } else {
+            draw_texture_ex(texture, cam.offset.x as f32, cam.offset.y as f32, WHITE, DrawTextureParams { 
+                dest_size: Some(Vec2::new(w as f32 * cam.scale, h as f32 * cam.scale)),
+                source: None,
+                rotation: 0.,
+                pivot: None,
+            });
+        }
 
         let mut mouse_over_canvas = true;
         draw_window(
@@ -375,16 +549,23 @@ async fn main() {
                         size = size.saturating_add(1);
                     }
                 }
-                ui.separator();
                 {
-                    ui.label(None, " Zero step showed only");
-                    ui.label(None, " for |step| < 100.");
-                    ui.label(None, " Show zero step: ");
+                    ui.label(None, " Draw grid: ");
                     ui.same_line(0.0);
-                    if ui.button(None, if show_zero_step { "Yes" } else { "No" }) {
-                        show_zero_step = !show_zero_step;
-                    }   
+                    if ui.button(None, if draw_grid { "Yes" } else { "No" }) {
+                        draw_grid = !draw_grid;
+                    } 
                 }
+                // ui.separator();
+                // {
+                //     ui.label(None, " Zero step showed only");
+                //     ui.label(None, " for |step| < 100.");
+                //     ui.label(None, " Show zero step: ");
+                //     ui.same_line(0.0);
+                //     if ui.button(None, if show_zero_step { "Yes" } else { "No" }) {
+                //         show_zero_step = !show_zero_step;
+                //     }   
+                // }
                 ui.separator();
                 {
                     ui.label(None, " Mouse control:");
