@@ -230,6 +230,7 @@ impl InvertibleRules for TheTenetOfLife {
 #[derive(Debug, Clone)]
 pub struct World<T: InvertibleRules> {
 	rules: T,
+	intermediate_step: bool,
 	world: OnlyWorld<T>,
 }
 
@@ -320,6 +321,7 @@ impl<T: InvertibleRules> World<T> {
 	pub fn new(rules: T, halfwidth: usize, halfheight: usize) -> Self {
 		Self {
 			rules,
+			intermediate_step: false,
 			world: OnlyWorld::new(halfwidth, halfheight),
 		}
 	}
@@ -350,13 +352,25 @@ impl<T: InvertibleRules> World<T> {
 
 	pub fn step(&mut self) {
 		let rules = &self.rules;
-		self.world.for_each_block(0, |current| rules.step1()[current.into()].clone());
-		self.world.for_each_block(1, |current| rules.step2()[current.into()].clone());
+		if self.intermediate_step {
+			self.world.for_each_block(1, |current| rules.step2()[current.into()].clone());
+		} else {
+			self.world.for_each_block(0, |current| rules.step1()[current.into()].clone());
+		}
+		self.intermediate_step = !self.intermediate_step;
+	}
+
+	pub fn is_intermediate_step(&mut self) -> bool {
+		self.intermediate_step
 	}
 
 	pub fn step_back(&mut self) {
 		let rules = &self.rules;
-		self.world.for_each_block(1, |current| rules.step2_invert()[current.into()].clone());
-		self.world.for_each_block(0, |current| rules.step1_invert()[current.into()].clone());
+		if self.intermediate_step {
+			self.world.for_each_block(0, |current| rules.step1_invert()[current.into()].clone());
+		} else {
+			self.world.for_each_block(1, |current| rules.step2_invert()[current.into()].clone());
+		}
+		self.intermediate_step = !self.intermediate_step;
 	}
 }
