@@ -9,7 +9,7 @@ use world::*;
 
 fn window_conf() -> Conf {
     Conf {
-        window_title: "The Tenet of Life".to_owned(),
+        window_title: "The Tenet Of Life".to_owned(),
         high_dpi: true,
         window_width: 750,
         window_height: 750,
@@ -216,12 +216,11 @@ impl FloatImageCamera {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let w = 50;
-    let h = 50;
+    let w = 100;
+    let h = 100;
 
 	let tenet_world = World::new(TheTenetOfLife::calculate().unwrap(), w/2, h/2);
-    // tenet_world.arr_mut().iter_mut().enumerate().for_each(|(index, i)| *i = (index as u8) % 3);
-    // let critters_world = World::new(Critters::calculate().unwrap(), w/2, h/2);
+    //let critters_world = World::new(Critters::calculate().unwrap(), w/2, h/2);
     // let bowling_world = World::new(Bowling::calculate().unwrap(), w/2, h/2);
 
     let mut world = tenet_world;
@@ -249,6 +248,7 @@ async fn main() {
     };
     let mut last_mouse_pos = Vec2i::new(mouse_position().0 as i32, mouse_position().1 as i32);
     let mut mouse_move = false;
+    let mut clear_mouse = 0;
 
     let mut draw_grid = false;
 
@@ -598,12 +598,19 @@ async fn main() {
         if mouse_over_canvas {
             if is_mouse_button_down(MouseButton::Left) && is_mouse_button_down(MouseButton::Right) {
                 world.set_rect(mouse.x as usize, mouse.y as usize, size, size, 0);
-            } else if is_mouse_button_down(MouseButton::Left) {
+                clear_mouse = 0b11;
+            } else if is_mouse_button_down(MouseButton::Left) && clear_mouse == 0 {
                 world.set_rect(mouse.x as usize, mouse.y as usize, size, size, 1);
-            } else if is_mouse_button_down(MouseButton::Right) {
+            } else if is_mouse_button_down(MouseButton::Right) && clear_mouse == 0 {
                 world.set_rect(mouse.x as usize, mouse.y as usize, size, size, 2);
             }
 
+            if !is_mouse_button_down(MouseButton::Left) {
+                clear_mouse &= 0b01;
+            }
+            if !is_mouse_button_down(MouseButton::Right) {
+                clear_mouse &= 0b10;
+            }
 
             if !is_key_down(KeyCode::LeftShift) && !is_key_down(KeyCode::LeftControl) {
                 if mouse_wheel_y > 0. {
