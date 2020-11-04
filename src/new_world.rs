@@ -1,12 +1,15 @@
+use crate::world::normalize;
+use std::convert::TryFrom;
+
 #[derive(Debug, Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CellState(pub u8);
 
 #[derive(Debug, Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct BlockInt(u8);
+pub struct BlockInt(pub u8);
 
 pub trait Rules {
-	fn to_block_int(cells: [CellState; 4]) -> BlockInt;
-	fn from_block_int(int: BlockInt) -> [CellState; 4];
+	fn to_block_int(&self, cells: [CellState; 4]) -> BlockInt;
+	fn from_block_int(&self, int: BlockInt) -> [CellState; 4];
 
 	fn step1(&self) -> &[BlockInt];
 	fn step2(&self) -> &[BlockInt];
@@ -30,23 +33,23 @@ pub struct RulesTwoStates {
 
 // In current Rust there is no const generics :(
 macro_rules! invert {
-	($size:literal, $type:ty, $from:ident) => {
-		<[$type; $size]>::try_from(
+	($size:literal, $from:ident) => {
+		<[BlockInt; $size]>::try_from(
 			&(0..$size)
 				.map(|x| {
 					$from
 						.iter()
-						.position(|&y| y == x)
-						.map(|x| u8::try_from(x).ok())
+						.position(|&y| y.0 == x)
+						.map(|x| u8::try_from(x).ok().map(|x| BlockInt(x)))
 				})
-				.collect::<Option<Option<Vec<u8>>>>()??[..]
+				.collect::<Option<Option<Vec<BlockInt>>>>()??[..]
 		).ok()?
 	};
 }
 
-impl RulesSingleState {
+impl RulesTwoStates {
 	pub fn from_one_step(step_permutation: [BlockInt; 16]) -> Option<Self> {
-		let step_invert = invert!(16, u8, step_permutation);
+		let step_invert = invert!(16, step_permutation);
 		Some(
 			Self {
 				step1: step_permutation.clone(),
@@ -61,8 +64,8 @@ impl RulesSingleState {
 		step1_permutation: [BlockInt; 16],
 		step2_permutation: [BlockInt; 16],
 	) -> Option<Self> {
-		let step1_invert = invert!(16, u8, step1_permutation);
-		let step2_invert = invert!(16, u8, step2_permutation);
+		let step1_invert = invert!(16, step1_permutation);
+		let step2_invert = invert!(16, step2_permutation);
 		Some(
 			Self {
 				step1: step1_permutation,
@@ -75,7 +78,7 @@ impl RulesSingleState {
 }
 
 impl Rules for RulesTwoStates {
-	fn to_block_int([a, b, c, d]: [CellState; 4]) -> BlockInt {
+	fn to_block_int(&self, [a, b, c, d]: [CellState; 4]) -> BlockInt {
 		BlockInt(
 			(a.0 * 8) +
 			(b.0 * 4) +
@@ -83,27 +86,27 @@ impl Rules for RulesTwoStates {
 			d.0
 		)
 	}
-	fn from_block_int(int: BlockInt) -> [CellState; 4] {
+	fn from_block_int(&self, int: BlockInt) -> [CellState; 4] {
 		[
-			int.0 / 8 != 0,
-			(int.0 / 4) % 2 != 0,
-			(int.0 / 2) % 2 != 0,
-			int.0 % 2 != 0,
+			CellState(int.0 / 8),
+			CellState((int.0 / 4) % 2),
+			CellState((int.0 / 2) % 2),
+			CellState(int.0 % 2),
 		]
 	}
 
 	fn step1(&self) -> &[BlockInt] {
-		self.step1
+		&self.step1
 	}
 	fn step2(&self) -> &[BlockInt] {
-		self.step2
+		&self.step2
 	}
 
 	fn step1_invert(&self) -> &[BlockInt] {
-		self.step1_invert
+		&self.step1_invert
 	}
 	fn step2_invert(&self) -> &[BlockInt] {
-		self.step2_invert
+		&self.step2_invert
 	}
 
 	fn mouse_1(&self) -> CellState {
@@ -130,7 +133,7 @@ pub struct RulesThreeStates {
 
 impl RulesThreeStates {
 	pub fn from_one_step(step_permutation: [BlockInt; 81]) -> Option<Self> {
-		let step_invert = invert!(81, u8, step_permutation);
+		let step_invert = invert!(81, step_permutation);
 		Some(
 			Self {
 				step1: step_permutation.clone(),
@@ -145,19 +148,21 @@ impl RulesThreeStates {
 		step1_permutation: [BlockInt; 81],
 		step2_permutation: [BlockInt; 81],
 	) -> Option<Self> {
-		let step1_invert = invert!(81, u8, step1_permutation);
-		let step2_invert = invert!(81, u8, step2_permutation);
-		Self {
-			step1: step1_permutation,
-			step2: step2_permutation,
-			step1_invert,
-			step2_invert,
-		}
+		let step1_invert = invert!(81, step1_permutation);
+		let step2_invert = invert!(81, step2_permutation);
+		Some(
+			Self {
+				step1: step1_permutation,
+				step2: step2_permutation,
+				step1_invert,
+				step2_invert,
+			}
+		)
 	}
 }
 
 impl Rules for RulesThreeStates {
-	fn to_block_int([a, b, c, d]: [CellState; 4]) -> BlockInt {
+	fn to_block_int(&self, [a, b, c, d]: [CellState; 4]) -> BlockInt {
 		BlockInt(
 			(a.0 * 27) +
 			(b.0 * 9) +
@@ -165,27 +170,27 @@ impl Rules for RulesThreeStates {
 			d.0
 		)
 	}
-	fn from_block_int(int: BlockInt) -> [CellState; 4] {
+	fn from_block_int(&self, int: BlockInt) -> [CellState; 4] {
 		[
-			int.0 / 27,
-			(int.0 / 9) % 3,
-			(int.0 / 3) % 3,
-			int.0 % 3,
+			CellState(int.0 / 27),
+			CellState((int.0 / 9) % 3),
+			CellState((int.0 / 3) % 3),
+			CellState(int.0 % 3),
 		]
 	}
 
 	fn step1(&self) -> &[BlockInt] {
-		self.step1
+		&self.step1
 	}
 	fn step2(&self) -> &[BlockInt] {
-		self.step2
+		&self.step2
 	}
 
 	fn step1_invert(&self) -> &[BlockInt] {
-		self.step1_invert
+		&self.step1_invert
 	}
 	fn step2_invert(&self) -> &[BlockInt] {
-		self.step2_invert
+		&self.step2_invert
 	}
 
 	fn mouse_1(&self) -> CellState {
@@ -212,13 +217,13 @@ pub struct World {
 }
 
 macro_rules! for_each_block {
-	($offset: expr, $input:ident, $output: ident, $f:expr) => {
-		for x in (0..self.width/2).map(|x| x * 2 + $offset) {
-			for y in (0..self.height/2).map(|y| y * 2 + $offset) {
-				let $input = self.get_block(x, y);
-				let output;
+	($self: ident, $offset: expr, $input:ident, $output: ident, $f:expr) => {
+		for x in (0..$self.width/2).map(|x| x * 2 + $offset) {
+			for y in (0..$self.height/2).map(|y| y * 2 + $offset) {
+				let $input = $self.get_block(x, y);
+				let $output: BlockInt;
 				$f;
-				self.set_block(x, y, output);
+				$self.set_block(x, y, $output);
 			}
 		}
 	};
@@ -238,11 +243,11 @@ impl World {
 	}
 
 	pub fn arr(&self) -> &[CellState] {
-		&self.world.arr[..]
+		&self.array[..]
 	}
 
 	pub fn arr_mut(&mut self) -> &mut [CellState] {
-		&mut self.world.arr[..]
+		&mut self.array[..]
 	}
 
 	pub fn set_new_size(&mut self, halfwidth: usize, halfheight: usize) {
@@ -252,11 +257,11 @@ impl World {
 
 		for y in 0..self.height.min(new_height) {
 			for x in 0..self.width.min(new_width) {
-				new_arr[x + y * new_width] = self.arr[x + y * self.width].clone();
+				new_arr[x + y * new_width] = self.array[x + y * self.width].clone();
 			}
 		}
 
-		self.arr = new_arr;
+		self.array = new_arr;
 		self.width = new_width;
 		self.height = new_height;
 	}
@@ -265,14 +270,14 @@ impl World {
 		let x = normalize(x, self.width);
 		let y = normalize(y, self.height);
 
-		self.arr[x + y * self.width].clone()
+		self.array[x + y * self.width].clone()
 	}
 
 	pub fn set(&mut self, x: usize, y: usize, val: CellState) {
 		let x = normalize(x, self.width);
 		let y = normalize(y, self.height);
 
-		self.arr[x + y * self.width] = val;
+		self.array[x + y * self.width] = val;
 	}
 
 	pub fn set_rect(&mut self, x: usize, y: usize, width: usize, height: usize, val: CellState) {
@@ -308,9 +313,13 @@ impl World {
 
 	pub fn step(&mut self) {
 		if self.intermediate_step {
-			for_each_block!(1, current, output, { output = self.rules.step2()[current.into()].clone(); });
+			for_each_block!(self, 1, current, output, {
+				output = self.rules.step2()[usize::from(current.0)].clone();
+			});
 		} else {
-			for_each_block!(0, current, output, { output = self.rules.step1()[current.into()].clone(); });
+			for_each_block!(self, 0, current, output, { 
+				output = self.rules.step1()[usize::from(current.0)].clone();
+			});
 		}
 		self.intermediate_step = !self.intermediate_step;
 	}
@@ -318,9 +327,13 @@ impl World {
 	pub fn step_back(&mut self) {
 		let rules = &self.rules;
 		if self.intermediate_step {
-			for_each_block!(1, current, output, { output = self.rules.step1_invert()[current.into()].clone(); });
+			for_each_block!(self, 1, current, output, {
+				output = self.rules.step1_invert()[usize::from(current.0)].clone();
+			});
 		} else {
-			for_each_block!(0, current, output, { output = self.rules.step2_invert()[current.into()].clone(); });
+			for_each_block!(self, 0, current, output, {
+				output = self.rules.step2_invert()[usize::from(current.0)].clone(); 
+			});
 		}
 		self.intermediate_step = !self.intermediate_step;
 	}
