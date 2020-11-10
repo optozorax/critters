@@ -1,6 +1,7 @@
 mod world;
-mod new_world;
-mod permutation_string;
+mod rules;
+
+use crate::rules::{Rules, RulesTwoStates, RulesThreeStates, BlockInt};
 
 use std::ops;
 
@@ -11,7 +12,7 @@ use world::*;
 
 fn window_conf() -> Conf {
     Conf {
-        window_title: "The Tenet Of Life".to_owned(),
+        window_title: "Invertible automata simulation".to_owned(),
         high_dpi: true,
         window_width: 750,
         window_height: 750,
@@ -218,12 +219,63 @@ impl FloatImageCamera {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    let rules: Vec<(String, Box<dyn Rules>)> = {
+        let mut result: Vec<(String, Box<dyn Rules>)> = Vec::new();
+
+        macro_rules! block_arr { ($($a:expr),+ $(,)?) => { [$(BlockInt($a)),+] }; }
+
+        let critters: [BlockInt; 16] = block_arr![
+            0b1111, 0b1110, 0b1101, 0b0011,
+            0b1011, 0b0101, 0b0110, 0b0001,
+            0b0111, 0b1001, 0b1010, 0b0010,
+            0b1100, 0b0100, 0b1000, 0b0000,
+        ];
+
+        result.push(("Critters".to_string(), Box::new(RulesTwoStates::from_one_step(critters).unwrap())));
+
+        let bowling = block_arr![
+            0b0000, 0b1000, 0b0100, 0b0011,
+            0b0010, 0b0101, 0b1001, 0b0111,
+            0b0001, 0b0110, 0b1010, 0b1011,
+            0b1100, 0b1101, 0b1110, 0b1111,
+        ];
+
+        result.push(("Bowling".to_string(), Box::new(RulesTwoStates::from_one_step(bowling).unwrap())));
+
+        let the_tenet_of_life_step1 = block_arr![
+            0,  1,  54, 3,  36, 7,  18, 5,  72, 
+            9,  30, 19, 28, 39, 66, 21, 48, 75, 
+            6,  11, 60, 15, 42, 69, 56, 51, 26, 
+            27, 12, 55, 10, 37, 64, 57, 46, 73, 
+            4,  31, 58, 13, 40, 67, 22, 49, 76, 
+            63, 34, 61, 16, 43, 70, 25, 68, 79, 
+            2,  29, 24, 33, 38, 65, 20, 47, 62, 
+            45, 32, 59, 14, 41, 52, 23, 50, 77, 
+            8 , 35, 74, 17, 44, 71, 78, 53, 80,
+        ];
+
+        let the_tenet_of_life_step2 = block_arr![
+            0,  27, 2,  9,  36, 7,  6,  5,  72, 
+            3,  30, 19, 28, 13, 66, 21, 48, 75, 
+            18, 11, 60, 15, 42, 69, 56, 51, 78, 
+            1,  12, 55, 10, 31, 64, 57, 46, 73, 
+            4,  37, 58, 39, 40, 67, 22, 49, 76, 
+            63, 34, 61, 16, 43, 70, 25, 68, 79, 
+            54, 29, 24, 33, 38, 65, 20, 47, 74, 
+            45, 32, 59, 14, 41, 52, 23, 50, 77, 
+            8,  35, 62, 17, 44, 71, 26, 53, 80,
+        ];
+
+        result.push(("The Tenet Of Life".to_string(), Box::new(RulesThreeStates::from_two_steps(the_tenet_of_life_step1, the_tenet_of_life_step2).unwrap())));
+
+        result
+    };
     let w = 100;
     let h = 100;
 
-	let tenet_world = World::new(TheTenetOfLife::calculate().unwrap(), w/2, h/2);
-    //let critters_world = World::new(Critters::calculate().unwrap(), w/2, h/2);
-    // let bowling_world = World::new(Bowling::calculate().unwrap(), w/2, h/2);
+    let mut current_rules = 0;
+
+	let tenet_world = World::new(rules[current_rules].1.clone_box(), w/2, h/2);
 
     let mut world = tenet_world;
 
@@ -231,18 +283,9 @@ async fn main() {
     let mut image = Image::gen_image_color(w as u16, h as u16, WHITE);
     let texture = load_texture_from_image(&image);
     set_texture_filter(texture, FilterMode::Nearest);
-    // texture.set_filter(unsafe { get_internal_gl().quad_context }, FilterMode::Nearest);
-
-    let mut buffer2 = vec![WHITE; w * h];
-    let mut image2 = Image::gen_image_color(w as u16, h as u16, WHITE);
-    let texture2 = load_texture_from_image(&image);
-    set_texture_filter(texture2, FilterMode::Nearest);
-    // texture2.set_filter(unsafe { get_internal_gl().quad_context }, FilterMode::Nearest);
 
     let mut size = 3usize;
     let mut i = 0i64;
-    let mut to_zero = world.clone();
-    let mut show_zero_step = false;
 
     let mut cam = FloatImageCamera {
         offset: Vec2i::new(150, 150),
@@ -387,10 +430,6 @@ async fn main() {
     loop {
         clear_background(GRAY);
 
-        if i.abs() >= 100 {
-            show_zero_step = false;
-        }
-
         let mouse_raw = Vec2i::new(mouse_position().0 as i32, mouse_position().1 as i32);
         let mut mouse = (mouse_raw.clone() - &cam.offset) * (1.0 / cam.scale);
         mouse.x = world::normalize(mouse.x as usize, w) as i32;
@@ -398,47 +437,8 @@ async fn main() {
 
         let (_, mouse_wheel_y) = mouse_wheel();
 
-        if show_zero_step {
-            to_zero.arr_mut().iter_mut().zip(world.arr().iter()).for_each(|(to_zero, world)| *to_zero = *world);
-            let mut i_to_zero = i;
-            while i_to_zero != 0 {
-                if i.signum() == -1 {
-                    to_zero.step();
-                } else {
-                    to_zero.step_back();
-                }
-                i_to_zero -= i.signum();
-            }
-
-            buffer2.iter_mut().zip(to_zero.arr().iter()).for_each(|(buffer, &world)| {
-                *buffer = match world as u8 {
-                    0 => BLACK,
-                    1 => BLUE,
-                    2 => RED,
-                    _ => unreachable!(),
-                };
-            });
-
-            for x in 0..size as usize {
-                for y in 0..size as usize {
-                    if let Some(x) = buffer2.get_mut((mouse.x as usize + x) + (mouse.y as usize + y) * w) {
-                        *x = YELLOW;
-                    }
-                }
-            }
-
-            image2.update(&buffer2);
-            update_texture(texture2, &image2);
-            draw_texture_ex(texture2, cam.offset.x as f32, cam.offset.y as f32 + (h as f32 + 10.) * cam.scale, WHITE, DrawTextureParams { 
-                dest_size: Some(Vec2::new(w as f32 * cam.scale, h as f32 * cam.scale)),
-                source: None,
-                rotation: 0.,
-                pivot: None,
-            });
-        }
-
         buffer.iter_mut().zip(world.arr().iter()).for_each(|(buffer, &world)| {
-            *buffer = match world as u8 {
+            *buffer = match world.0 {
                 0 => BLACK,
                 1 => BLUE,
                 2 => RED,
@@ -514,6 +514,13 @@ async fn main() {
                     ui.label(None, &format!(" Mouse position on canvas: ({}, {})", mouse.x, mouse.y));
                 }
                 {
+                    let new_rules = ui.combo_box(hash!(), "Type", &rules.iter().map(|x| x.0.as_str()).collect::<Vec<&str>>());
+                    if new_rules != current_rules {
+                        current_rules = new_rules;
+                        world.change_rules(rules[current_rules].1.clone_box());
+                    }
+                }
+                {
                     ui.label(None, " Step: ");
                     ui.same_line(0.0);
                     if ui.button(None, "-10") {
@@ -558,16 +565,6 @@ async fn main() {
                         draw_grid = !draw_grid;
                     } 
                 }
-                // ui.separator();
-                // {
-                //     ui.label(None, " Zero step showed only");
-                //     ui.label(None, " for |step| < 100.");
-                //     ui.label(None, " Show zero step: ");
-                //     ui.same_line(0.0);
-                //     if ui.button(None, if show_zero_step { "Yes" } else { "No" }) {
-                //         show_zero_step = !show_zero_step;
-                //     }   
-                // }
                 ui.separator();
                 {
                     ui.label(None, " Mouse control:");
@@ -599,12 +596,12 @@ async fn main() {
 
         if mouse_over_canvas {
             if is_mouse_button_down(MouseButton::Left) && is_mouse_button_down(MouseButton::Right) {
-                world.set_rect(mouse.x as usize, mouse.y as usize, size, size, 0);
+                world.set_rect(mouse.x as usize, mouse.y as usize, size, size, world.get_rules().mouse_3());
                 clear_mouse = 0b11;
             } else if is_mouse_button_down(MouseButton::Left) && clear_mouse == 0 {
-                world.set_rect(mouse.x as usize, mouse.y as usize, size, size, 1);
+                world.set_rect(mouse.x as usize, mouse.y as usize, size, size, world.get_rules().mouse_1());
             } else if is_mouse_button_down(MouseButton::Right) && clear_mouse == 0 {
-                world.set_rect(mouse.x as usize, mouse.y as usize, size, size, 2);
+                world.set_rect(mouse.x as usize, mouse.y as usize, size, size, world.get_rules().mouse_2());
             }
 
             if !is_mouse_button_down(MouseButton::Left) {

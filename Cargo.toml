@@ -8,5 +8,6 @@ edition = "2018"
 
 [dependencies]
 lazy_static = "1.4.0"
-macroquad = { git = "https://github.com/not-fl3/macroquad", branch = "0.3", rev = "904e167" }
+macroquad = { git = "https://github.com/not-fl3/macroquad", rev = "904e167" }
 num-bigint = "0.3.1"
+permutation_string = { git = "https://github.com/optozorax/permutation_string" }

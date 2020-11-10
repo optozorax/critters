@@ -60,6 +60,9 @@ version = "0.1.0"
 dependencies = [
  "lazy_static",
  "macroquad",
+ "num-bigint",
+ "permutation_string",
+ "thiserror",
 ]
 
 [[package]]
@@ -115,7 +118,7 @@ checksum = "bd7d4bd64732af4bf3a67f367c27df8520ad7e230c5817b8ff485864d80242b9"
 [[package]]
 name = "macroquad"
 version = "0.3.0-alpha.2"
-source = "git+https://github.com/not-fl3/macroquad?branch=0.3#904e1676d06aec29aee401707322979fec8221f8"
+source = "git+https://github.com/not-fl3/macroquad?rev=904e167#904e1676d06aec29aee401707322979fec8221f8"
 dependencies = [
  "glam",
  "image",
@@ -129,12 +132,12 @@ dependencies = [
 [[package]]
 name = "macroquad_macro"
 version = "0.1.0"
-source = "git+https://github.com/not-fl3/macroquad?branch=0.3#904e1676d06aec29aee401707322979fec8221f8"
+source = "git+https://github.com/not-fl3/macroquad?rev=904e167#904e1676d06aec29aee401707322979fec8221f8"
 
 [[package]]
 name = "megaui"
 version = "0.2.13"
-source = "git+https://github.com/not-fl3/macroquad?branch=0.3#904e1676d06aec29aee401707322979fec8221f8"
+source = "git+https://github.com/not-fl3/macroquad?rev=904e167#904e1676d06aec29aee401707322979fec8221f8"
 dependencies = [
  "miniquad_text_rusttype",
 ]
@@ -161,6 +164,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3223bd0dbc43a241228209464f995a7a6a86d64865459a8f1b8870890c6caea7"
 dependencies = [
  "rusttype 0.7.9",
+]
+
+[[package]]
+name = "num-bigint"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e9a41747ae4633fce5adffb4d2e81ffc5e89593cb19917f8fb2cc5ff76507bf"
+dependencies = [
+ "autocfg",
+ "num-integer",
+ "num-traits",
 ]
 
 [[package]]
@@ -214,6 +228,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "permutation_string"
+version = "0.1.0"
+source = "git+https://github.com/optozorax/permutation_string#eb4260aac994f1a3c23c7f21e06bc608e0391beb"
+dependencies = [
+ "lazy_static",
+ "num-bigint",
+ "thiserror",
+]
+
+[[package]]
 name = "png"
 version = "0.15.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -226,9 +250,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "proc-macro2"
+version = "1.0.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e0704ee1a7e00d7bb417d0770ea303c1bccbabf0ef1667dae92b5967f5f8a71"
+dependencies = [
+ "unicode-xid",
+]
+
+[[package]]
 name = "quad-gl"
 version = "0.2.5"
-source = "git+https://github.com/not-fl3/macroquad?branch=0.3#904e1676d06aec29aee401707322979fec8221f8"
+source = "git+https://github.com/not-fl3/macroquad?rev=904e167#904e1676d06aec29aee401707322979fec8221f8"
 dependencies = [
  "glam",
  "image",
@@ -240,6 +273,15 @@ name = "quad-rand"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec3e8eb9b1d9b58a43bac8f20985768ddcc03b928a909d4d39ced327b971fec5"
+
+[[package]]
+name = "quote"
+version = "1.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa563d17ecb180e500da1cfd2b028310ac758de548efdd203e18f283af693f37"
+dependencies = [
+ "proc-macro2",
+]
 
 [[package]]
 name = "rusttype"
@@ -329,6 +371,43 @@ checksum = "f77b6b07e862c66a9f3e62a07588fee67cd90a9135a2b942409f195507b4fb51"
 dependencies = [
  "byteorder",
 ]
+
+[[package]]
+name = "syn"
+version = "1.0.48"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc371affeffc477f42a221a1e4297aedcea33d47d19b61455588bd9d8f6b19ac"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-xid",
+]
+
+[[package]]
+name = "thiserror"
+version = "1.0.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e9ae34b84616eedaaf1e9dd6026dbe00dcafa92aa0c8077cb69df1fcfe5e53e"
+dependencies = [
+ "thiserror-impl",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "1.0.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ba20f23e85b10754cd195504aebf6a27e2e6cbe28c17778a0c930724628dd56"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "unicode-xid"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
 
 [[package]]
 name = "winapi"
