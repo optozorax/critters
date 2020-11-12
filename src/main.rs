@@ -2,6 +2,7 @@ mod world;
 mod rules;
 
 use crate::rules::{Rules, RulesTwoStates, RulesThreeStates, BlockInt};
+use permutation_string::PermutationArray;
 
 use std::ops;
 
@@ -217,30 +218,139 @@ impl FloatImageCamera {
     }
 }
 
-#[macroquad::main(window_conf)]
-async fn main() {
-    let rules: Vec<(String, Box<dyn Rules>)> = {
-        let mut result: Vec<(String, Box<dyn Rules>)> = Vec::new();
+pub struct ChangeRulesWindow {
+    current_rules_type: usize,
+    draw_self: bool,
+    is_changed: bool,
+    current_rules: Vec<PermutationArray>,
+    current_rules_name: String,
+    known_rules: Vec<(&'static str, Vec<(&'static str, Vec<PermutationArray>)>)>,
+}
 
+impl Default for ChangeRulesWindow {
+    fn default() -> Self {
+        let known_rules = vec![
+            ("2 states, 1 step",
+            vec![
+                ("Critters", vec![PermutationArray(vec![
+                    0b1111, 0b1110, 0b1101, 0b0011,
+                    0b1011, 0b0101, 0b0110, 0b0001,
+                    0b0111, 0b1001, 0b1010, 0b0010,
+                    0b1100, 0b0100, 0b1000, 0b0000,
+                ])]), 
+                ("Billiard Ball Machine", vec![PermutationArray(vec![
+                    0b0000, 0b1000, 0b0100, 0b0011,
+                    0b0010, 0b0101, 0b1001, 0b0111,
+                    0b0001, 0b0110, 0b1010, 0b1011,
+                    0b1100, 0b1101, 0b1110, 0b1111,
+                ])]), 
+                ("Single Rotate", vec![PermutationArray(vec![
+                    0,2,8,3,1,5,6,7,4,9,10,11,12,13,14,15
+                ])]), 
+                ("Bounce gas", vec![PermutationArray(vec![
+                    0,8,4,3,2,5,9,14,1,6,10,13,12,11,7,15
+                ])]), 
+                ("HPP gas", vec![PermutationArray(vec![
+                    0,8,4,12,2,10,9,14,1,6,5,13,3,11,7,15
+                ])]), 
+                ("Rotations", vec![PermutationArray(vec![
+                    0,2,8,12,1,10,9,11,4,6,5,14,3,7,13,15
+                ])]), 
+                ("Rotations 2", vec![PermutationArray(vec![
+                    0,2,8,12,1,10,9,13,4,6,5,7,3,14,11,15
+                ])]), 
+                ("Rotations 3", vec![PermutationArray(vec![
+                    0,4,1,10,8,3,9,11,2,6,12,14,5,7,13,15
+                ])]), 
+                ("Rotations 4", vec![PermutationArray(vec![
+                    0,4,1,12,8,10,6,14,2,9,5,13,3,11,7,15
+                ])]), 
+                ("String Thing", vec![PermutationArray(vec![
+                    0,1,2,12,4,10,9,7,8,6,5,11,3,13,14,15
+                ])]), 
+                ("String Thing 2", vec![PermutationArray(vec![
+                    0,1,2,12,4,10,6,7,8,9,5,11,3,13,14,15
+                ])]), 
+                ("Swap On Diag", vec![PermutationArray(vec![
+                    0,8,4,12,2,10,6,14,1,9,5,13,3,11,7,15
+                ])]), 
+                ("Tron", vec![PermutationArray(vec![
+                    15,1,2,3,4,5,6,7,8,9,10,11,12,13,14,0
+                ])]), 
+                ("Double Rotate", vec![PermutationArray(vec![
+                    0,2,8,3,1,5,6,13,4,9,10,7,12,14,11,15
+                ])]),
+            ]),
+            ("2 states, 2 step",
+            vec![
+                (
+                    "Critters with inverted 2 step",
+                    vec![
+                        PermutationArray(vec![
+                            0b1111, 0b1110, 0b1101, 0b0011,
+                            0b1011, 0b0101, 0b0110, 0b0001,
+                            0b0111, 0b1001, 0b1010, 0b0010,
+                            0b1100, 0b0100, 0b1000, 0b0000,
+                        ]),
+                        // TODO
+                        PermutationArray(vec![
+                            0b1111, 0b1110, 0b1101, 0b0011,
+                            0b1011, 0b0101, 0b0110, 0b0001,
+                            0b0111, 0b1001, 0b1010, 0b0010,
+                            0b1100, 0b0100, 0b1000, 0b0000,
+                        ])
+                    ]
+                ),
+            ]),
+            ("3 states, 1 step", vec![]),
+            ("3 states, 2 step",
+            vec![
+                (
+                    "The Tenet Of Life",
+                    vec![
+                        // TODO вычислять это на этапе запуска
+                        PermutationArray(vec![
+                            0,  1,  54, 3,  36, 7,  18, 5,  72, 
+                            9,  30, 19, 28, 39, 66, 21, 48, 75, 
+                            6,  11, 60, 15, 42, 69, 56, 51, 26, 
+                            27, 12, 55, 10, 37, 64, 57, 46, 73, 
+                            4,  31, 58, 13, 40, 67, 22, 49, 76, 
+                            63, 34, 61, 16, 43, 70, 25, 68, 79, 
+                            2,  29, 24, 33, 38, 65, 20, 47, 62, 
+                            45, 32, 59, 14, 41, 52, 23, 50, 77, 
+                            8 , 35, 74, 17, 44, 71, 78, 53, 80,
+                        ]),
+                        PermutationArray(vec![
+                            0,  27, 2,  9,  36, 7,  6,  5,  72, 
+                            3,  30, 19, 28, 13, 66, 21, 48, 75, 
+                            18, 11, 60, 15, 42, 69, 56, 51, 78, 
+                            1,  12, 55, 10, 31, 64, 57, 46, 73, 
+                            4,  37, 58, 39, 40, 67, 22, 49, 76, 
+                            63, 34, 61, 16, 43, 70, 25, 68, 79, 
+                            54, 29, 24, 33, 38, 65, 20, 47, 74, 
+                            45, 32, 59, 14, 41, 52, 23, 50, 77, 
+                            8,  35, 62, 17, 44, 71, 26, 53, 80,
+                        ])
+                    ]
+                ),
+            ]),
+        ];
+        let current_rules_type = 1;
+        let (current_rules_name, current_rules) = known_rules[current_rules_type].1[0].clone();
+        ChangeRulesWindow {
+            draw_self: false,
+            is_changed: true,
+            current_rules_type,
+            current_rules,
+            current_rules_name: current_rules_name.to_string(),
+            known_rules,
+        }
+    }
+}
+
+impl ChangeRulesWindow {
+    pub fn get_default_rules(&self) -> Box<dyn Rules> {
         macro_rules! block_arr { ($($a:expr),+ $(,)?) => { [$(BlockInt($a)),+] }; }
-
-        let critters: [BlockInt; 16] = block_arr![
-            0b1111, 0b1110, 0b1101, 0b0011,
-            0b1011, 0b0101, 0b0110, 0b0001,
-            0b0111, 0b1001, 0b1010, 0b0010,
-            0b1100, 0b0100, 0b1000, 0b0000,
-        ];
-
-        result.push(("Critters".to_string(), Box::new(RulesTwoStates::from_one_step(critters).unwrap())));
-
-        let bowling = block_arr![
-            0b0000, 0b1000, 0b0100, 0b0011,
-            0b0010, 0b0101, 0b1001, 0b0111,
-            0b0001, 0b0110, 0b1010, 0b1011,
-            0b1100, 0b1101, 0b1110, 0b1111,
-        ];
-
-        result.push(("Bowling".to_string(), Box::new(RulesTwoStates::from_one_step(bowling).unwrap())));
 
         let the_tenet_of_life_step1 = block_arr![
             0,  1,  54, 3,  36, 7,  18, 5,  72, 
@@ -266,16 +376,61 @@ async fn main() {
             8,  35, 62, 17, 44, 71, 26, 53, 80,
         ];
 
-        result.push(("The Tenet Of Life".to_string(), Box::new(RulesThreeStates::from_two_steps(the_tenet_of_life_step1, the_tenet_of_life_step2).unwrap())));
+        Box::new(RulesThreeStates::from_two_steps(the_tenet_of_life_step1, the_tenet_of_life_step2).unwrap())
+    }
 
-        result
-    };
+    pub fn draw_window_for_change_rules(&mut self, mouse_over_canvas: &mut bool) -> Option<Box<dyn Rules>> {
+        draw_window(
+            hash!(),
+            vec2(10., 10.),
+            vec2(270., 510.),
+            WindowParams {
+                label: "Change rules".to_string(),
+                close_button: true,
+                ..Default::default()
+            },
+            |ui| {
+                *mouse_over_canvas &= !ui.is_mouse_over(ui::Vector2::new(mouse_position().0, mouse_position().1));
+                let mut change_rules = None;
+                ui.tree_node(hash!(), "Known rules", |ui| {
+                    for (name, rules) in &self.known_rules {
+                        ui.label(None, name);
+                        ui.separator();
+                        for (rule_name, rule_array) in rules.iter() {
+                            if ui.button(None, rule_name) {
+                                change_rules = Some(rule_array.clone());
+                            }
+                        }
+                    }
+                })
+            }
+        );
+        None
+    }
+
+    pub fn activate(&mut self) {
+        self.draw_self = true;
+    }
+
+    // fn construct_rules(permutation_vecs: Vec<PermutationArray>) -> Result<Box<dyn Rules>, String> {
+    //     if permutation_vecs.len() == 1 {
+    //         unimplemented!()
+    //     } else if permutation_vecs.len() == 2 {
+    //         unimplemented!()
+    //     } else {
+    //         Err("Wrong count of steps. Supported only 1 and 2 steps.".to_owned())
+    //     }
+    // }
+}
+
+#[macroquad::main(window_conf)]
+async fn main() {
     let w = 100;
     let h = 100;
 
-    let mut current_rules = 0;
+    let mut rules_window = ChangeRulesWindow::default();
 
-	let tenet_world = World::new(rules[current_rules].1.clone_box(), w/2, h/2);
+	let tenet_world = World::new(rules_window.get_default_rules(), w/2, h/2);
 
     let mut world = tenet_world;
 
@@ -514,10 +669,8 @@ async fn main() {
                     ui.label(None, &format!(" Mouse position on canvas: ({}, {})", mouse.x, mouse.y));
                 }
                 {
-                    let new_rules = ui.combo_box(hash!(), "Type", &rules.iter().map(|x| x.0.as_str()).collect::<Vec<&str>>());
-                    if new_rules != current_rules {
-                        current_rules = new_rules;
-                        world.change_rules(rules[current_rules].1.clone_box());
+                    if ui.button(None, "Change rules") {
+                        rules_window.activate();
                     }
                 }
                 {
@@ -577,6 +730,10 @@ async fn main() {
                 }
             },
         );
+
+        if let Some(new_rules) = rules_window.draw_window_for_change_rules(&mut mouse_over_canvas) {
+            world.change_rules(new_rules);
+        }
 
         if is_key_down(KeyCode::LeftShift) {
             if mouse_wheel_y > 0. {
