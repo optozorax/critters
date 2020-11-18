@@ -132,11 +132,11 @@ impl World {
 
 	pub fn step_back(&mut self) {
 		if self.intermediate_step {
-			for_each_block!(self, 1, current, output, {
+			for_each_block!(self, 0, current, output, {
 				output = self.rules.step1_invert()[usize::from(current.0)];
 			});
 		} else {
-			for_each_block!(self, 0, current, output, {
+			for_each_block!(self, 1, current, output, {
 				output = self.rules.step2_invert()[usize::from(current.0)]; 
 			});
 		}

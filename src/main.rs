@@ -1,8 +1,12 @@
 mod world;
 mod rules;
 
+use std::convert::TryFrom;
+use std::convert::TryInto;
 use crate::rules::{Rules, RulesTwoStates, RulesThreeStates, BlockInt};
 use permutation_string::PermutationArray;
+
+use thiserror::Error;
 
 use std::ops;
 
@@ -225,6 +229,7 @@ pub struct ChangeRulesWindow {
     current_rules: Vec<PermutationArray>,
     current_rules_name: String,
     known_rules: Vec<(&'static str, Vec<(&'static str, Vec<PermutationArray>)>)>,
+    label: Option<String>,
 }
 
 impl Default for ChangeRulesWindow {
@@ -344,6 +349,7 @@ impl Default for ChangeRulesWindow {
             current_rules,
             current_rules_name: current_rules_name.to_string(),
             known_rules,
+            label: None,
         }
     }
 }
@@ -380,6 +386,7 @@ impl ChangeRulesWindow {
     }
 
     pub fn draw_window_for_change_rules(&mut self, mouse_over_canvas: &mut bool) -> Option<Box<dyn Rules>> {
+        let mut to_return = None;
         draw_window(
             hash!(),
             vec2(10., 10.),
@@ -398,29 +405,78 @@ impl ChangeRulesWindow {
                         ui.separator();
                         for (rule_name, rule_array) in rules.iter() {
                             if ui.button(None, rule_name) {
-                                change_rules = Some(rule_array.clone());
+                                change_rules = Some((rule_array.clone(), rule_name));
                             }
                         }
                     }
-                })
+                });
+                if let Some((rules, name)) = change_rules {
+                    match construct_rules(rules) {
+                        Ok(rules) => {
+                            self.label = Some(format!("Successfully changed rules to {}", name));
+                            to_return = Some(rules);
+                        },
+                        Err(err) => {
+                            self.label = Some(err.to_string())
+                        }
+                    }
+                }
+                if let Some(label) = self.label.as_ref() {
+                    ui.label(None, label);
+                }
             }
         );
-        None
+        to_return
     }
 
     pub fn activate(&mut self) {
         self.draw_self = true;
     }
+}
 
-    // fn construct_rules(permutation_vecs: Vec<PermutationArray>) -> Result<Box<dyn Rules>, String> {
-    //     if permutation_vecs.len() == 1 {
-    //         unimplemented!()
-    //     } else if permutation_vecs.len() == 2 {
-    //         unimplemented!()
-    //     } else {
-    //         Err("Wrong count of steps. Supported only 1 and 2 steps.".to_owned())
-    //     }
-    // }
+#[derive(Debug, Clone, Eq, Hash, Ord, PartialEq, PartialOrd, Error)]
+pub enum ConstructError {
+    #[error("wrong count of steps: `{steps_count}`, supported only 1 or 2 steps")]
+    WrongSteps { steps_count: usize },
+    #[error("wrong elements count in array")]
+    WrongElementsCount,
+    #[error("arrays is not permutation arrays")]
+    NotPermutationArrays,
+}
+
+pub fn construct_rules(permutation_vecs: Vec<PermutationArray>) -> Result<Box<dyn Rules>, ConstructError> {
+    macro_rules! to_array {
+        ($size:tt, $array:ident) => {
+            <[BlockInt; $size]>::try_from(
+                &$array.0
+                .into_iter()
+                .map(|x| x.try_into().ok().map(BlockInt))
+                .collect::<Option<Vec<BlockInt>>>().ok_or(ConstructError::NotPermutationArrays)?[..]
+            ).unwrap()
+        };
+    }
+    let mut it = permutation_vecs.into_iter();
+    match (it.next(), it.next(), it.next()) {
+        (Some(a), None, None) => {
+            if a.0.len() == 16 {
+                Ok(Box::new(RulesTwoStates::from_one_step(to_array!(16, a)).ok_or(ConstructError::NotPermutationArrays)?))
+            } else if a.0.len() == 81 {
+                Ok(Box::new(RulesThreeStates::from_one_step(to_array!(81, a)).ok_or(ConstructError::NotPermutationArrays)?))
+            } else {
+                Err(ConstructError::WrongElementsCount)
+            }
+        },
+        (Some(a), Some(b), None) => {
+            if a.0.len() == 16 && b.0.len() == 16 {
+                Ok(Box::new(RulesTwoStates::from_two_steps(to_array!(16, a), to_array!(16, b)).ok_or(ConstructError::NotPermutationArrays)?))
+            } else if a.0.len() == 81 && b.0.len() == 81 {
+                Ok(Box::new(RulesThreeStates::from_two_steps(to_array!(81, a), to_array!(81, b)).ok_or(ConstructError::NotPermutationArrays)?))
+            } else {
+                Err(ConstructError::WrongElementsCount)
+            }
+        },
+        _ => Err(ConstructError::WrongSteps { steps_count: 2 + it.count() }),
+    }
 }
 
 #[macroquad::main(window_conf)]
