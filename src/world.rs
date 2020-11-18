@@ -4,6 +4,16 @@ pub fn normalize(var: usize, size: usize) -> usize {
 	if var >= size { var % size } else { var }
 }
 
+pub fn normalize_i32(var: i32, size: i32) -> i32 {
+	if var >= size { 
+		var % size 
+	} else if var <= 0 {
+		size - (-var) % size
+	} else { 
+		var 
+	}
+}
+
 pub struct World {
 	rules: Box<dyn Rules>,
 	array: Vec<CellState>,

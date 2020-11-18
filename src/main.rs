@@ -19,7 +19,7 @@ fn window_conf() -> Conf {
     Conf {
         window_title: "Invertible automata simulation".to_owned(),
         high_dpi: true,
-        window_width: 750,
+        window_width: 1250,
         window_height: 750,
         ..Default::default()
     }
@@ -389,7 +389,7 @@ impl ChangeRulesWindow {
         let mut to_return = None;
         draw_window(
             hash!(),
-            vec2(10., 10.),
+            vec2(screen_width()-270.-10., 10.),
             vec2(270., 510.),
             WindowParams {
                 label: "Change rules".to_string(),
@@ -499,7 +499,7 @@ async fn main() {
     let mut i = 0i64;
 
     let mut cam = FloatImageCamera {
-        offset: Vec2i::new(150, 150),
+        offset: Vec2i::new((screen_width()/2. - 1.5*150.) as i32, 150),
         scale: 1.5 * 300.0 / w as f32,
     };
     let mut last_mouse_pos = Vec2i::new(mouse_position().0 as i32, mouse_position().1 as i32);
@@ -643,8 +643,8 @@ async fn main() {
 
         let mouse_raw = Vec2i::new(mouse_position().0 as i32, mouse_position().1 as i32);
         let mut mouse = (mouse_raw.clone() - &cam.offset) * (1.0 / cam.scale);
-        mouse.x = world::normalize(mouse.x as usize, w) as i32;
-        mouse.y = world::normalize(mouse.y as usize, h) as i32;
+        mouse.x = world::normalize_i32(mouse.x as i32, w as i32);
+        mouse.y = world::normalize_i32(mouse.y as i32, h as i32);
 
         let (_, mouse_wheel_y) = mouse_wheel();
 
