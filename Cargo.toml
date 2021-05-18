@@ -8,7 +8,10 @@ edition = "2018"
 
 [dependencies]
 lazy_static = "1.4.0"
-macroquad = { git = "https://github.com/not-fl3/macroquad", rev = "904e167" }
+macroquad = { git = "https://github.com/not-fl3/macroquad", rev = "1ce46ba" }
 num-bigint = "0.3.1"
 permutation_string = { git = "https://github.com/optozorax/permutation_string" }
 thiserror = "1.0.22"
+the-tenet-of-life = { path = "../the-tenet-of-life" }
+fntools = { git = "https://github.com/WaffleLapkin/fntools", rev = "dce0040" }
+megaui = "0.2.18"

@@ -1,6 +1,7 @@
 mod world;
 mod rules;
 
+use fntools::value::*;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use crate::rules::{Rules, RulesTwoStates, RulesThreeStates, BlockInt};
@@ -11,7 +12,7 @@ use thiserror::Error;
 use std::ops;
 
 use macroquad::prelude::*;
-use macroquad::megaui as ui;
+use megaui as ui;
 
 use world::*;
 
@@ -234,77 +235,40 @@ pub struct ChangeRulesWindow {
 
 impl Default for ChangeRulesWindow {
     fn default() -> Self {
+        use the_tenet_of_life::*;
+
+        let critters_permutation = vec![15,14,13,3,11,5,6,1,7,9,10,2,12,4,8,0];
+        let tron = vec![15,1,2,3,4,5,6,7,8,9,10,11,12,13,14,0];
+
         let known_rules = vec![
             ("2 states, 1 step",
             vec![
-                ("Critters", vec![PermutationArray(vec![
-                    0b1111, 0b1110, 0b1101, 0b0011,
-                    0b1011, 0b0101, 0b0110, 0b0001,
-                    0b0111, 0b1001, 0b1010, 0b0010,
-                    0b1100, 0b0100, 0b1000, 0b0000,
-                ])]), 
-                ("Billiard Ball Machine", vec![PermutationArray(vec![
-                    0b0000, 0b1000, 0b0100, 0b0011,
-                    0b0010, 0b0101, 0b1001, 0b0111,
-                    0b0001, 0b0110, 0b1010, 0b1011,
-                    0b1100, 0b1101, 0b1110, 0b1111,
-                ])]), 
-                ("Single Rotate", vec![PermutationArray(vec![
-                    0,2,8,3,1,5,6,7,4,9,10,11,12,13,14,15
-                ])]), 
-                ("Bounce gas", vec![PermutationArray(vec![
-                    0,8,4,3,2,5,9,14,1,6,10,13,12,11,7,15
-                ])]), 
-                ("HPP gas", vec![PermutationArray(vec![
-                    0,8,4,12,2,10,9,14,1,6,5,13,3,11,7,15
-                ])]), 
-                ("Rotations", vec![PermutationArray(vec![
-                    0,2,8,12,1,10,9,11,4,6,5,14,3,7,13,15
-                ])]), 
-                ("Rotations 2", vec![PermutationArray(vec![
-                    0,2,8,12,1,10,9,13,4,6,5,7,3,14,11,15
-                ])]), 
-                ("Rotations 3", vec![PermutationArray(vec![
-                    0,4,1,10,8,3,9,11,2,6,12,14,5,7,13,15
-                ])]), 
-                ("Rotations 4", vec![PermutationArray(vec![
-                    0,4,1,12,8,10,6,14,2,9,5,13,3,11,7,15
-                ])]), 
-                ("String Thing", vec![PermutationArray(vec![
-                    0,1,2,12,4,10,9,7,8,6,5,11,3,13,14,15
-                ])]), 
-                ("String Thing 2", vec![PermutationArray(vec![
-                    0,1,2,12,4,10,6,7,8,9,5,11,3,13,14,15
-                ])]), 
-                ("Swap On Diag", vec![PermutationArray(vec![
-                    0,8,4,12,2,10,6,14,1,9,5,13,3,11,7,15
-                ])]), 
-                ("Tron", vec![PermutationArray(vec![
-                    15,1,2,3,4,5,6,7,8,9,10,11,12,13,14,0
-                ])]), 
-                ("Double Rotate", vec![PermutationArray(vec![
-                    0,2,8,3,1,5,6,13,4,9,10,7,12,14,11,15
-                ])]),
+                ("Critters", vec![PermutationArray(critters_permutation.clone())]),
+                ("Billiard Ball Machine", vec![PermutationArray(vec![0,8,4,3,2,5,9,7,1,6,10,11,12,13,14,15])]),
+                ("Single Rotate", vec![PermutationArray(vec![0,2,8,3,1,5,6,7,4,9,10,11,12,13,14,15])]),
+                ("Bounce gas", vec![PermutationArray(vec![0,8,4,3,2,5,9,14,1,6,10,13,12,11,7,15])]),
+                ("HPP gas", vec![PermutationArray(vec![0,8,4,12,2,10,9,14,1,6,5,13,3,11,7,15])]),
+                ("Rotations", vec![PermutationArray(vec![0,2,8,12,1,10,9,11,4,6,5,14,3,7,13,15])]),
+                ("Rotations 2", vec![PermutationArray(vec![0,2,8,12,1,10,9,13,4,6,5,7,3,14,11,15])]),
+                ("Rotations 3", vec![PermutationArray(vec![0,4,1,10,8,3,9,11,2,6,12,14,5,7,13,15])]),
+                ("Rotations 4", vec![PermutationArray(vec![0,4,1,12,8,10,6,14,2,9,5,13,3,11,7,15])]),
+                ("String Thing", vec![PermutationArray(vec![0,1,2,12,4,10,9,7,8,6,5,11,3,13,14,15])]),
+                ("String Thing 2", vec![PermutationArray(vec![0,1,2,12,4,10,6,7,8,9,5,11,3,13,14,15])]),
+                ("Swap On Diag", vec![PermutationArray(vec![0,8,4,12,2,10,6,14,1,9,5,13,3,11,7,15])]),
+                ("Tron", vec![PermutationArray(tron.clone())]),
+                ("Double Rotate", vec![PermutationArray(vec![0,2,8,3,1,5,6,13,4,9,10,7,12,14,11,15])]),
             ]),
             ("2 states, 2 step",
             vec![
                 (
                     "Critters with inverted 2 step",
-                    vec![
-                        PermutationArray(vec![
-                            0b1111, 0b1110, 0b1101, 0b0011,
-                            0b1011, 0b0101, 0b0110, 0b0001,
-                            0b0111, 0b1001, 0b1010, 0b0010,
-                            0b1100, 0b0100, 0b1000, 0b0000,
-                        ]),
-                        // TODO
-                        PermutationArray(vec![
-                            0b1111, 0b1110, 0b1101, 0b0011,
-                            0b1011, 0b0101, 0b0110, 0b0001,
-                            0b0111, 0b1001, 0b1010, 0b0010,
-                            0b1100, 0b0100, 0b1000, 0b0000,
-                        ])
-                    ]
+                    rules_invert_second_step(&critters_permutation)
+                        .apply(|(x, y)| vec![PermutationArray(x), PermutationArray(y)])
+                ),
+                (
+                    "Tron with inverted 2 step",
+                    rules_invert_second_step(&tron)
+                        .apply(|(x, y)| vec![PermutationArray(x), PermutationArray(y)])
                 ),
             ]),
             ("3 states, 1 step", vec![]),
@@ -312,31 +276,8 @@ impl Default for ChangeRulesWindow {
             vec![
                 (
                     "The Tenet Of Life",
-                    vec![
-                        // TODO вычислять это на этапе запуска
-                        PermutationArray(vec![
-                            0,  1,  54, 3,  36, 7,  18, 5,  72, 
-                            9,  30, 19, 28, 39, 66, 21, 48, 75, 
-                            6,  11, 60, 15, 42, 69, 56, 51, 26, 
-                            27, 12, 55, 10, 37, 64, 57, 46, 73, 
-                            4,  31, 58, 13, 40, 67, 22, 49, 76, 
-                            63, 34, 61, 16, 43, 70, 25, 68, 79, 
-                            2,  29, 24, 33, 38, 65, 20, 47, 62, 
-                            45, 32, 59, 14, 41, 52, 23, 50, 77, 
-                            8 , 35, 74, 17, 44, 71, 78, 53, 80,
-                        ]),
-                        PermutationArray(vec![
-                            0,  27, 2,  9,  36, 7,  6,  5,  72, 
-                            3,  30, 19, 28, 13, 66, 21, 48, 75, 
-                            18, 11, 60, 15, 42, 69, 56, 51, 78, 
-                            1,  12, 55, 10, 31, 64, 57, 46, 73, 
-                            4,  37, 58, 39, 40, 67, 22, 49, 76, 
-                            63, 34, 61, 16, 43, 70, 25, 68, 79, 
-                            54, 29, 24, 33, 38, 65, 20, 47, 74, 
-                            45, 32, 59, 14, 41, 52, 23, 50, 77, 
-                            8,  35, 62, 17, 44, 71, 26, 53, 80,
-                        ])
-                    ]
+                    rules_calc_tenet(&critters_permutation)
+                        .apply(|(x, y)| vec![PermutationArray(x), PermutationArray(y)])
                 ),
             ]),
         ];
@@ -386,7 +327,7 @@ impl ChangeRulesWindow {
     }
 
     pub fn draw_window_for_change_rules(&mut self, mouse_over_canvas: &mut bool) -> Option<Box<dyn Rules>> {
-        let mut to_return = None;
+        /*let mut to_return = None;
         draw_window(
             hash!(),
             vec2(screen_width()-270.-10., 10.),
@@ -426,7 +367,8 @@ impl ChangeRulesWindow {
                 }
             }
         );
-        to_return
+        to_return*/
+        None
     }
 
     pub fn activate(&mut self) {
@@ -479,6 +421,75 @@ pub fn construct_rules(permutation_vecs: Vec<PermutationArray>) -> Result<Box<dy
     }
 }
 
+use macroquad::texture::Texture2D;
+use macroquad::math::Vec2;
+
+pub struct MouseCam {
+    last_mouse_pos: Vec2,
+    mouse_move: bool,
+    offset: Vec2,
+    scale: f32,
+}
+
+impl MouseCam {
+    pub fn new_center(texture_size: (f32, f32)) -> Self {
+        Self {
+            last_mouse_pos: Vec2::new(0., 0.),
+            mouse_move: false,
+            offset: Vec2::new(screen_width()/2. - 1.5*150., 150.0),
+            scale: 1.5 * 300.0 / texture_size.0
+        }
+    }
+
+    pub fn scale_mul(&mut self, mouse_pos: Vec2, mul_to_scale: f32) {
+        self.scale_new(mouse_pos, self.scale * mul_to_scale);
+    }
+
+    pub fn scale_new(&mut self, mouse_pos: Vec2, new_scale: f32) {
+        self.offset = (self.offset - mouse_pos) * (new_scale / self.scale) + mouse_pos;
+        self.scale = new_scale;
+    }
+
+    pub fn step(&mut self, mouse_over_canvas: bool) {
+        let (_, mouse_wheel_y) = mouse_wheel();
+
+        const SCALE_FACTOR: f32 = 1.2;
+        if mouse_over_canvas && !is_key_down(KeyCode::LeftShift) && !is_key_down(KeyCode::LeftControl) {
+            if mouse_wheel_y > 0. {
+                self.scale_mul(self.last_mouse_pos, SCALE_FACTOR);
+            } else if mouse_wheel_y < 0. {
+                self.scale_mul(self.last_mouse_pos, 1.0 / SCALE_FACTOR);
+            }
+
+            self.mouse_move = is_mouse_button_down(MouseButton::Middle);
+        }
+
+        self.mouse_move &= is_mouse_button_down(MouseButton::Middle);
+
+        if self.mouse_move {
+            self.offset += Vec2::from(mouse_position()) - self.last_mouse_pos;
+        }
+        self.last_mouse_pos = mouse_position().into();
+    }
+
+    pub fn draw_texture(&self, texture: Texture2D) {
+        draw_texture_ex(texture, self.offset.x, self.offset.y, WHITE, DrawTextureParams { 
+            dest_size: Some(Vec2::new(texture.width() * self.scale, texture.height() * self.scale)),
+            source: None,
+            rotation: 0.,
+            pivot: None,
+        });
+    }
+
+    pub fn global_to_local(&self, point: Vec2) -> Vec2 {
+        (point - self.offset) / self.scale
+    }
+
+    fn local_to_global(&self, point: Vec2) -> Vec2 {
+        todo!()
+    }
+}
+
 #[macroquad::main(window_conf)]
 async fn main() {
     let w = 100;
@@ -498,12 +509,7 @@ async fn main() {
     let mut size = 3usize;
     let mut i = 0i64;
 
-    let mut cam = FloatImageCamera {
-        offset: Vec2i::new((screen_width()/2. - 1.5*150.) as i32, 150),
-        scale: 1.5 * 300.0 / w as f32,
-    };
-    let mut last_mouse_pos = Vec2i::new(mouse_position().0 as i32, mouse_position().1 as i32);
-    let mut mouse_move = false;
+    let mut cam = MouseCam::new_center((w as f32, h as f32));
     let mut clear_mouse = 0;
 
     let mut draw_grid = false;
@@ -641,10 +647,9 @@ async fn main() {
     loop {
         clear_background(GRAY);
 
-        let mouse_raw = Vec2i::new(mouse_position().0 as i32, mouse_position().1 as i32);
-        let mut mouse = (mouse_raw.clone() - &cam.offset) * (1.0 / cam.scale);
-        mouse.x = world::normalize_i32(mouse.x as i32, w as i32);
-        mouse.y = world::normalize_i32(mouse.y as i32, h as i32);
+        let mut mouse = cam.global_to_local(mouse_position().into());
+        mouse.x = world::normalize_i32(mouse.x as i32, w as i32) as f32;
+        mouse.y = world::normalize_i32(mouse.y as i32, h as i32) as f32;
 
         let (_, mouse_wheel_y) = mouse_wheel();
 
@@ -694,26 +699,16 @@ async fn main() {
                 gl_use_default_material();
             set_default_camera();
 
-            draw_texture_ex(render_target.texture, cam.offset.x as f32, cam.offset.y as f32, WHITE, DrawTextureParams { 
-                dest_size: Some(Vec2::new(w as f32 * cam.scale, h as f32 * cam.scale)),
-                source: None,
-                rotation: 0.,
-                pivot: None,
-            });
+            cam.draw_texture(render_target.texture);
         } else {
-            draw_texture_ex(texture, cam.offset.x as f32, cam.offset.y as f32, WHITE, DrawTextureParams { 
-                dest_size: Some(Vec2::new(w as f32 * cam.scale, h as f32 * cam.scale)),
-                source: None,
-                rotation: 0.,
-                pivot: None,
-            });
+            cam.draw_texture(texture);
         }
 
         let mut mouse_over_canvas = true;
-        draw_window(
+        /*draw_window(
             hash!(),
             vec2(10., 10.),
-            vec2(270., 310.),
+            vec2(330., 310.),
             WindowParams {
                 label: "Controls".to_string(),
                 close_button: false,
@@ -722,7 +717,7 @@ async fn main() {
             |ui| {
                 mouse_over_canvas &= !ui.is_mouse_over(ui::Vector2::new(mouse_position().0, mouse_position().1));
                 {
-                    ui.label(None, &format!(" Mouse position on canvas: ({}, {})", mouse.x, mouse.y));
+                    ui.label(None, &format!("Mouse position on canvas: ({}, {})", mouse.x, mouse.y));
                 }
                 {
                     if ui.button(None, "Change rules") {
@@ -730,32 +725,56 @@ async fn main() {
                     }
                 }
                 {
-                    ui.label(None, " Step: ");
+                    ui.label(None, &format!("Step: {:6}{}", i / 2, if i % 2 == 1 { ".5" } else { "  " }));
+
+                    ui.label(None, "Change: ");
+                    ui.same_line(0.0);
+                    if ui.button(None, "-100") {
+                        for _ in 0..100 { world.step_back(); world.step_back(); }
+                        i -= 200;
+                    }
                     ui.same_line(0.0);
                     if ui.button(None, "-10") {
-                        for _ in 0..10 { world.step_back(); }
-                        i -= 10;
+                        for _ in 0..10 { world.step_back(); world.step_back(); }
+                        i -= 20;
                     }
                     ui.same_line(0.0);
                     if ui.button(None, "-") {
                         world.step_back();
-                        i -= 1;
+                        world.step_back();
+                        i -= 2;
                     }
                     ui.same_line(0.0);
-                    ui.label(None, &format!("{:5}", i));
+                    if ui.button(None, "-.5") {
+                        world.step_back();
+                        i -= 1;
+                    }
+                    
+                    ui.label(None, "Change: ");
                     ui.same_line(0.0);
-                    if ui.button(None, "+") {
-                        world.step();
-                        i += 1;
+                    if ui.button(None, "+100") {
+                        for _ in 0..100 { world.step(); world.step(); }
+                        i += 200;
                     }
                     ui.same_line(0.0);
                     if ui.button(None, "+10") {
-                        for _ in 0..10 { world.step(); }
-                        i += 10;
-                    }    
+                        for _ in 0..10 { world.step(); world.step(); }
+                        i += 20;
+                    }
+                    ui.same_line(0.0);
+                    if ui.button(None, "+") {
+                        world.step();
+                        world.step();
+                        i += 2;
+                    }
+                    ui.same_line(0.0);
+                    if ui.button(None, "+.5") {
+                        world.step();
+                        i += 1;
+                    }
                 }
                 {
-                    ui.label(None, " Draw size: ");
+                    ui.label(None, "Draw size: ");
                     ui.same_line(0.0);
                     if ui.button(None, "-") {
                         size = size.saturating_sub(1);
@@ -768,7 +787,7 @@ async fn main() {
                     }
                 }
                 {
-                    ui.label(None, " Draw grid: ");
+                    ui.label(None, "Draw grid: ");
                     ui.same_line(0.0);
                     if ui.button(None, if draw_grid { "Yes" } else { "No" }) {
                         draw_grid = !draw_grid;
@@ -776,16 +795,16 @@ async fn main() {
                 }
                 ui.separator();
                 {
-                    ui.label(None, " Mouse control:");
-                    ui.label(None, "  Left button - draw blue cells");
-                    ui.label(None, "  Right button - draw red cells");
-                    ui.label(None, "  Middle button - move image");
-                    ui.label(None, "  Left + Right button - clear");
-                    ui.label(None, "  Shift + Wheel - change draw size");
-                    ui.label(None, "  Ctrl + Wheel - simulate");
+                    ui.label(None, "Mouse control:");
+                    ui.label(None, " Left button - draw blue cells");
+                    ui.label(None, " Right button - draw red cells");
+                    ui.label(None, " Middle button - move image");
+                    ui.label(None, " Left + Right button - clear");
+                    ui.label(None, " Shift + Wheel - change draw size");
+                    ui.label(None, "5 Ctrl + Wheel - simulate");
                 }
             },
-        );
+        );*/
 
         if let Some(new_rules) = rules_window.draw_window_for_change_rules(&mut mouse_over_canvas) {
             world.change_rules(new_rules);
@@ -823,24 +842,9 @@ async fn main() {
             if !is_mouse_button_down(MouseButton::Right) {
                 clear_mouse &= 0b10;
             }
-
-            if !is_key_down(KeyCode::LeftShift) && !is_key_down(KeyCode::LeftControl) {
-                if mouse_wheel_y > 0. {
-                    cam.scale_mul(&last_mouse_pos, 1.2);
-                } else if mouse_wheel_y < 0. {
-                    cam.scale_mul(&last_mouse_pos, 1.0 / 1.2);
-                }
-            }
-            
-
-            mouse_move = is_mouse_button_down(MouseButton::Middle);
-            
         }
-        if mouse_move {
-            cam.offset(&(mouse_raw.clone() - &last_mouse_pos));
-        }
-        last_mouse_pos = mouse_raw;
-
+        
+        cam.step(mouse_over_canvas);
         next_frame().await
     }
 }
